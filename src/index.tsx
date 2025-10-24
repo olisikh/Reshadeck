@@ -63,7 +63,6 @@ const Content: VFC<{}> = ({}) => {
             </PanelSectionRow>
             <PanelSectionRow>
                 <Button
-                    style={{ padding: "8px 16px" }}
                     onClick={async () => {
                         console.log("Selected Shader is: " + selectedShader);
                         await call("apply_shader", selectedShader.data);
