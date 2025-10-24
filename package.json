@@ -2,6 +2,7 @@
   "name": "reshadeck",
   "version": "0.2.0",
   "description": "A plugin for loading reshade plugins on steam deck",
+  "type": "module",
   "scripts": {
     "build": "shx rm -rf dist && rollup -c",
     "watch": "rollup -c -w",

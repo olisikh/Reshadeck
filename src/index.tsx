@@ -81,17 +81,17 @@ class ReshadeckLogic {
 const Content: VFC<{ logic: ReshadeckLogic }> = ({ logic }) => {
     const baseShader = { data: "None", label: "No Shader" } as SingleDropdownOption;
     const baseScreensaver = { data: "None", label: "No Screensaver" } as SingleDropdownOption;
-    const [_shader_list, setShaderList] = useState<string[]>([]);
+    const [_shaderList, setShaderList] = useState<string[]>([]);
     const [selectedShader, setSelectedShader] = useState<DropdownOption>(baseShader);
     const [shaderOptions, setShaderOptions] = useState<DropdownOption[]>([baseShader]);
     const [selectedScreenSaver, setSelectedScreenSaver] = useState<DropdownOption>(baseShader);
     const [screenSaverOptions, setScreenSaverOptions] = useState<DropdownOption[]>([baseScreensaver]);
 
-    const getShaderOptions = (le_list: string[], baseShaderOrSS: any) => {
+    const getShaderOptions = (leList: string[], baseShaderOrSS: any) => {
         let options: DropdownOption[] = [];
         options.push(baseShaderOrSS);
-        for (let i = 0; i < le_list.length; i++) {
-            let option = { data: le_list[i], label: le_list[i] } as SingleDropdownOption;
+        for (let i = 0; i < leList.length; i++) {
+            let option = { data: leList[i], label: leList[i] } as SingleDropdownOption;
             options.push(option);
         }
         return options;
