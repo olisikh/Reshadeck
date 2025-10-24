@@ -8,6 +8,7 @@ import {
     Dropdown,
     DropdownOption,
     SingleDropdownOption,
+    Button,
 } from "@decky/ui";
 
 import { VFC, useState, useEffect } from "react";
@@ -56,19 +57,20 @@ const Content: VFC<{}> = ({}) => {
                     rgOptions={shaderOptions}
                     selectedOption={selectedShader}
                     onChange={(newSelectedShader: DropdownOption) => {
-                        setSelectedShader(newSelectedShader.data);
+                        setSelectedShader(newSelectedShader);
                     }}
                 />
             </PanelSectionRow>
             <PanelSectionRow>
-                <ButtonItem
+                <Button
+                    style={{ padding: "8px 16px" }}
                     onClick={async () => {
                         console.log("Selected Shader is: " + selectedShader);
-                        await call("apply_shader", { shader_name: selectedShader.data });
+                        await call("apply_shader", selectedShader.data);
                     }}
                 >
                     Enable shader
-                </ButtonItem>
+                </Button>
             </PanelSectionRow>
             <PanelSectionRow>
                 <div>
