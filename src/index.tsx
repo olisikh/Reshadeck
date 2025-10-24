@@ -1,40 +1,30 @@
+import { call, toaster, Toaster } from "@decky/api";
 import {
     ButtonItem,
     definePlugin,
-    DialogButton,
-    Menu,
-    MenuItem,
     PanelSection,
     PanelSectionRow,
-    ToggleField,
-    Router,
-    ServerAPI,
-    showContextMenu,
     staticClasses,
     Dropdown,
     DropdownOption,
     SingleDropdownOption,
-} from "decky-frontend-lib";
+    Unregisterable,
+} from "@decky/ui";
+
 import { VFC, useState, useEffect } from "react";
 import { MdWbShade } from "react-icons/md";
-import logo from "../assets/logo.png";
-
 
 class ReshadeckLogic {
-    serverAPI: ServerAPI;
     dataTakenAt: number = Date.now();
     screensaverActive: boolean = false;
-
-    constructor(serverAPI: ServerAPI) {
-        this.serverAPI = serverAPI;
-    }
 
     handleButtonInput = async (val: any[]) => {
         if (!this.screensaverActive) {
             return;
         }
         let cancel = false;
-        const { flSoftwareGyroDegreesPerSecondPitch,
+        const {
+            flSoftwareGyroDegreesPerSecondPitch,
             flSoftwareGyroDegreesPerSecondYaw,
             flSoftwareGyroDegreesPerSecondRoll,
             ulButtons,
@@ -43,9 +33,16 @@ class ReshadeckLogic {
             sRightStickX,
             sRightStickY,
         } = val[0];
-        if (ulButtons != 0) { cancel = true; }
-        if (Math.abs(sLeftStickX) > 5000 || Math.abs(sLeftStickY) > 5000 ||
-            Math.abs(sRightStickX) > 5000 || Math.abs(sRightStickY) > 5000) {
+
+        if (ulButtons != 0) {
+            cancel = true;
+        }
+        if (
+            Math.abs(sLeftStickX) > 5000 ||
+            Math.abs(sLeftStickY) > 5000 ||
+            Math.abs(sRightStickX) > 5000 ||
+            Math.abs(sRightStickY) > 5000
+        ) {
             cancel = true;
         }
 
@@ -54,33 +51,37 @@ class ReshadeckLogic {
         }
         this.dataTakenAt = Date.now();
         let degrees = 10;
-        if (!cancel && Math.abs(flSoftwareGyroDegreesPerSecondPitch) > degrees ||
+        if (
+            (!cancel && Math.abs(flSoftwareGyroDegreesPerSecondPitch) > degrees) ||
             Math.abs(flSoftwareGyroDegreesPerSecondYaw) > degrees ||
-            Math.abs(flSoftwareGyroDegreesPerSecondRoll) > degrees) {
+            Math.abs(flSoftwareGyroDegreesPerSecondRoll) > degrees
+        ) {
             cancel = true;
         }
 
         if (cancel) {
-            await this.serverAPI.callPluginMethod("apply_shader", { "screensaver": false });
-            await this.serverAPI.toaster.toast({
+            await call("apply_shader", { screensaver: false });
+
+            toaster.toast({
                 title: "Waking Up Screen",
                 body: "Waking Up Screen",
                 duration: 100,
-                critical: true
+                critical: true,
             });
+
             this.screensaverActive = false;
         }
-    }
+    };
 
-    handleSuspend = async (val: any) => {
-        await this.serverAPI.callPluginMethod("apply_shader", { "screensaver": false });
-    }
+    handleSuspend = async () => {
+        await call("apply_shader", { screensaver: false });
+    };
 }
 
-const Content: VFC<{ serverAPI: ServerAPI, logic: ReshadeckLogic }> = ({ serverAPI, logic }) => {
+const Content: VFC<{ logic: ReshadeckLogic }> = ({ logic }) => {
     const baseShader = { data: "None", label: "No Shader" } as SingleDropdownOption;
     const baseScreensaver = { data: "None", label: "No Screensaver" } as SingleDropdownOption;
-    const [shader_list, set_shader_list] = useState<string[]>([]);
+    const [_shader_list, setShaderList] = useState<string[]>([]);
     const [selectedShader, setSelectedShader] = useState<DropdownOption>(baseShader);
     const [shaderOptions, setShaderOptions] = useState<DropdownOption[]>([baseShader]);
     const [selectedScreenSaver, setSelectedScreenSaver] = useState<DropdownOption>(baseShader);
@@ -94,21 +95,28 @@ const Content: VFC<{ serverAPI: ServerAPI, logic: ReshadeckLogic }> = ({ serverA
             options.push(option);
         }
         return options;
-    }
+    };
 
     const initState = async () => {
-        let shader_list = (await serverAPI.callPluginMethod("get_shader_list", {})).result as string[];
-        let screensaver_list = (await serverAPI.callPluginMethod("get_screensaver_list", {})).result as string[];
-        set_shader_list(shader_list)
-        setShaderOptions(getShaderOptions(shader_list, baseShader));
-        setScreenSaverOptions(getShaderOptions(screensaver_list, baseScreensaver));
+        let shaderList = await call<any, string[]>("get_shader_list", {});
+        let screensaverList = await call<any, string[]>("get_screensaver_list", {});
 
-        let curr = await serverAPI.callPluginMethod("get_current_shader", {});
-        setSelectedShader({ data: curr.result, label: (curr.result == "0" ? "None" : curr.result) } as SingleDropdownOption);
+        setShaderList(shaderList);
+        setShaderOptions(getShaderOptions(shaderList, baseShader));
+        setScreenSaverOptions(getShaderOptions(screensaverList, baseScreensaver));
 
-        let currSS = await serverAPI.callPluginMethod("get_current_screensaver", {});
-        setSelectedScreenSaver({ data: currSS.result, label: (currSS.result == "0" ? "None" : currSS.result) } as SingleDropdownOption);
-    }
+        let curr = await call<any, string>("get_current_shader", {});
+        setSelectedShader({
+            data: curr,
+            label: curr == "0" ? "None" : curr,
+        } as SingleDropdownOption);
+
+        let currSS = await call<any, string>("get_current_screensaver", {});
+        setSelectedScreenSaver({
+            data: currSS,
+            label: currSS == "0" ? "None" : currSS,
+        } as SingleDropdownOption);
+    };
 
     useEffect(() => {
         initState();
@@ -123,7 +131,9 @@ const Content: VFC<{ serverAPI: ServerAPI, logic: ReshadeckLogic }> = ({ serverA
                     rgOptions={shaderOptions}
                     selectedOption={selectedShader}
                     onChange={async (newSelectedShader: DropdownOption) => {
-                        await serverAPI.callPluginMethod("set_shader", { "shader_name": newSelectedShader.data });
+                        await call("set_shader", {
+                            shader_name: newSelectedShader.data,
+                        });
                     }}
                 />
             </PanelSectionRow>
@@ -137,29 +147,38 @@ const Content: VFC<{ serverAPI: ServerAPI, logic: ReshadeckLogic }> = ({ serverA
                     rgOptions={screenSaverOptions}
                     selectedOption={selectedScreenSaver}
                     onChange={async (newSelectedScreenSaver: DropdownOption) => {
-                        await serverAPI.callPluginMethod("set_screensaver", { "shader_name": newSelectedScreenSaver.data });
+                        await call("set_screensaver", {
+                            shader_name: newSelectedScreenSaver.data,
+                        });
                         setSelectedScreenSaver(newSelectedScreenSaver.data);
                     }}
                 />
             </PanelSectionRow>
             <PanelSectionRow>
-                <ButtonItem onClick={async () => {
-                    console.log(selectedScreenSaver);
-                    let ret = await serverAPI.callPluginMethod("apply_shader", { "screensaver": true });
-                    await serverAPI.toaster.toast({
-                        title: "Starting Screensaver",
-                        body: "Starting Screensaver",
-                        duration: 100,
-                        critical: true
-                    });
-                    setTimeout(() => {
-                        (logic as any).screensaverActive = true;
-                    }, 5000)
-                }
-                }>Start Screensaver</ButtonItem>
+                <ButtonItem
+                    onClick={async () => {
+                        console.log(selectedScreenSaver);
+                        await call("apply_shader", { screensaver: true });
+
+                        toaster.toast({
+                            title: "Starting Screensaver",
+                            body: "Starting Screensaver",
+                            duration: 100,
+                            critical: true,
+                        });
+                        setTimeout(() => {
+                            (logic as any).screensaverActive = true;
+                        }, 5000);
+                    }}
+                >
+                    Start Screensaver
+                </ButtonItem>
             </PanelSectionRow>
             <PanelSectionRow>
-                <div>Place any custom shaders in <pre>~/.local/share/gamescope</pre><pre>/reshade/Shaders</pre> so that the .fx files are in the root of the Shaders folder.</div>
+                <div>
+                    Place any custom shaders in <pre>~/.local/share/gamescope</pre>
+                    <pre>/reshade/Shaders</pre> so that the .fx files are in the root of the Shaders folder.
+                </div>
             </PanelSectionRow>
             <PanelSectionRow>
                 <div>WARNING: Shaders can lead to dropped frames and possibly even severe performance problems.</div>
@@ -168,20 +187,32 @@ const Content: VFC<{ serverAPI: ServerAPI, logic: ReshadeckLogic }> = ({ serverA
     );
 };
 
-export default definePlugin((serverApi: ServerAPI) => {
-    let logic = new ReshadeckLogic(serverApi);
-    let input_register = window.SteamClient.Input.RegisterForControllerStateChanges(logic.handleButtonInput);
-    let suspend_registers = [window.SteamClient.System.RegisterForOnSuspendRequest(logic.handleSuspend), window.SteamClient.System.RegisterForOnResumeFromSuspend(logic.handleSuspend)];
+export default definePlugin(() => {
+    const SteamClient = window.SteamClient;
+
+    let logic = new ReshadeckLogic();
+    let input_register: Unregisterable = SteamClient.Input.RegisterForControllerStateChanges(logic.handleButtonInput);
+
+    let suspend_registers: Unregisterable[] = [];
+    if (SteamClient.System.RegisterForOnSuspendRequest) {
+        suspend_registers.push(SteamClient.System.RegisterForOnSuspendRequest(logic.handleSuspend));
+    }
+    if (SteamClient.System.RegisterForOnResumeFromSuspend) {
+        suspend_registers.push(SteamClient.System.RegisterForOnResumeFromSuspend(logic.handleSuspend));
+    }
 
     return {
         title: <div className={staticClasses.Title}>Reshadeck</div>,
-        content: <Content serverAPI={serverApi} logic={logic} />,
+        content: <Content logic={logic} />,
         icon: <MdWbShade />,
+
         onDismount() {
-            input_register.unregister();
-            suspend_registers[0].unregister();
-            suspend_registers[1].unregister();
+            input_register?.unregister();
+
+            suspend_registers.forEach((suspend_register) => {
+                suspend_register.unregister();
+            });
         },
-        alwaysRender: true
+        alwaysRender: true,
     };
 });
