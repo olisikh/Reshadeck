@@ -191,14 +191,18 @@ export default definePlugin(() => {
     const SteamClient = window.SteamClient;
 
     let logic = new ReshadeckLogic();
-    let input_register: Unregisterable = SteamClient.Input.RegisterForControllerStateChanges(logic.handleButtonInput);
 
-    let suspend_registers: Unregisterable[] = [];
+    let inputRegister: Unregisterable;
+    if (SteamClient.Input.RegisterForControllerStateChanges) {
+        inputRegister = SteamClient.Input.RegisterForControllerStateChanges(logic.handleButtonInput);
+    }
+
+    let suspendRegisters: Unregisterable[] = [];
     if (SteamClient.System.RegisterForOnSuspendRequest) {
-        suspend_registers.push(SteamClient.System.RegisterForOnSuspendRequest(logic.handleSuspend));
+        suspendRegisters.push(SteamClient.System.RegisterForOnSuspendRequest(logic.handleSuspend));
     }
     if (SteamClient.System.RegisterForOnResumeFromSuspend) {
-        suspend_registers.push(SteamClient.System.RegisterForOnResumeFromSuspend(logic.handleSuspend));
+        suspendRegisters.push(SteamClient.System.RegisterForOnResumeFromSuspend(logic.handleSuspend));
     }
 
     return {
@@ -207,9 +211,9 @@ export default definePlugin(() => {
         icon: <MdWbShade />,
 
         onDismount() {
-            input_register?.unregister();
+            inputRegister?.unregister();
 
-            suspend_registers.forEach((suspend_register) => {
+            suspendRegisters.forEach((suspend_register) => {
                 suspend_register.unregister();
             });
         },
