@@ -69,7 +69,7 @@ const Content: VFC<{}> = ({}) => {
                         await call("apply_shader", selectedShader.data);
                     }}
                 >
-                    Enable shader
+                    Confirm
                 </Button>
             </PanelSectionRow>
             <PanelSectionRow>
