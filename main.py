@@ -13,16 +13,21 @@ from click import get_app_dir
 
 logger = decky.logger
 
-destination_folder = (
-    decky.DECKY_USER_HOME + "/.local/share/gamescope/reshade/Shaders"
-)
+destination_folder = decky.DECKY_USER_HOME + "/.local/share/gamescope/reshade/Shaders"
 shaders_folder = decky.DECKY_PLUGIN_DIR + "/shaders"
 
 
 class Plugin:
     _enabled = False
-    _current = "0"
+    _current_shader = "0"
     _current_screensaver = "SS_ScreenOff.fx"
+
+    def _get_clean_env(self):
+        """Get environment with cleared LD_LIBRARY_PATH to fix decky-loader subprocess issues"""
+        env = os.environ.copy()
+        env["LD_LIBRARY_PATH"] = ""
+        env["DISPLAY"] = ":0"
+        return env
 
     def _get_all_shaders():
         return sorted([str(p.name) for p in Path(destination_folder).glob("*.fx")])
@@ -36,40 +41,35 @@ class Plugin:
         return shaders
 
     async def get_current_shader(self):
-        return Plugin._current
+        return Plugin._current_shader
 
     async def get_current_screensaver(self):
         return Plugin._current_screensaver
 
     async def apply_shader(self, screensaver):
-        shader = Plugin._current if not screensaver else Plugin._current_screensaver
-        logger.info("Applying shader " + shader)
-        try:
-            ret = subprocess.run(
-                [shaders_folder + "/set_shader.sh", shader], capture_output=True
-            )
-            logger.info(ret)
-        except Exception:
-            logger.exception("apply screensaver")
+        shader_name = (
+            Plugin._current_shader if not screensaver else Plugin._current_screensaver
+        )
+        logger.info("Applying shader: " + shader_name)
 
-    async def set_shader(self, shader_name):
-        logger.info("Setting and applying shader " + shader_name)
         try:
-            env = os.environ.copy()
-            env["LD_LIBRARY_PATH"] = ""
             ret = subprocess.run(
                 [shaders_folder + "/set_shader.sh", shader_name],
                 capture_output=True,
-                env=env,
+                env=self._get_clean_env(),
             )
             logger.info(ret)
-
-            Plugin._current = shader_name
         except Exception:
-            logger.exception("setting shader")
+            logger.exception("apply shader")
+
+    async def set_shader(self, shader_name):
+        logger.info("Setting Shader: " + shader_name)
+        Plugin._current_shader = shader_name
+
+        await self.apply_shader(screensaver=False)
 
     async def set_screensaver(self, shader_name):
-        logger.info("Setting screensaver " + shader_name)
+        logger.info("Setting Screensaver: " + shader_name)
         Plugin._current_screensaver = shader_name
 
     async def _main(self):

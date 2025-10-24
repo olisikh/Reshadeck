@@ -128,14 +128,13 @@ const Content: VFC<{ logic: ReshadeckLogic }> = ({ logic }) => {
         <PanelSection title="Select Shader">
             <PanelSectionRow>
                 <Dropdown
-                    menuLabel="Select shader"
+                    menuLabel="Select Shader"
                     strDefaultLabel={selectedShader.label as string}
                     rgOptions={shaderOptions}
                     selectedOption={selectedShader}
                     onChange={async (newSelectedShader: DropdownOption) => {
-                        await call("set_shader", {
-                            shader_name: newSelectedShader.data,
-                        });
+                        setSelectedShader(newSelectedShader.data);
+                        await call("set_shader", { shader_name: newSelectedShader.data });
                     }}
                 />
             </PanelSectionRow>
@@ -144,22 +143,20 @@ const Content: VFC<{ logic: ReshadeckLogic }> = ({ logic }) => {
             </PanelSectionRow>
             <PanelSectionRow>
                 <Dropdown
-                    menuLabel="Select screensaver"
+                    menuLabel="Select Screensaver"
                     strDefaultLabel={selectedScreenSaver.label as string}
                     rgOptions={screenSaverOptions}
                     selectedOption={selectedScreenSaver}
                     onChange={async (newSelectedScreenSaver: DropdownOption) => {
-                        await call("set_screensaver", {
-                            shader_name: newSelectedScreenSaver.data,
-                        });
                         setSelectedScreenSaver(newSelectedScreenSaver.data);
+                        await call("set_screensaver", { shader_name: newSelectedScreenSaver.data });
                     }}
                 />
             </PanelSectionRow>
             <PanelSectionRow>
                 <ButtonItem
                     onClick={async () => {
-                        console.log(selectedScreenSaver);
+                        console.log("Selected Screensaver is: " + selectedScreenSaver);
                         await call("apply_shader", { screensaver: true });
 
                         toaster.toast({
