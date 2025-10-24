@@ -75,4 +75,4 @@ class Plugin:
             decky_plugin.logger.info(str(await Plugin.get_shader_list(self)))
             await Plugin.apply_shader(self, False)
         except Exception:
-            decky_plugin.logger.exepction("main")
+            decky_plugin.logger.exception("main")

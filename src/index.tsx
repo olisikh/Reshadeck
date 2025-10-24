@@ -98,20 +98,20 @@ const Content: VFC<{ logic: ReshadeckLogic }> = ({ logic }) => {
     };
 
     const initState = async () => {
-        let shaderList = await call<any, string[]>("get_shader_list", {});
-        let screensaverList = await call<any, string[]>("get_screensaver_list", {});
+        let shaderList = await call<any, string[]>("get_shader_list");
+        let screensaverList = await call<any, string[]>("get_screensaver_list");
 
         setShaderList(shaderList);
         setShaderOptions(getShaderOptions(shaderList, baseShader));
         setScreenSaverOptions(getShaderOptions(screensaverList, baseScreensaver));
 
-        let curr = await call<any, string>("get_current_shader", {});
+        let curr = await call<any, string>("get_current_shader");
         setSelectedShader({
             data: curr,
             label: curr == "0" ? "None" : curr,
         } as SingleDropdownOption);
 
-        let currSS = await call<any, string>("get_current_screensaver", {});
+        let currSS = await call<any, string>("get_current_screensaver");
         setSelectedScreenSaver({
             data: currSS,
             label: currSS == "0" ? "None" : currSS,
