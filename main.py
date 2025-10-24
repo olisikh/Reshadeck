@@ -7,7 +7,7 @@ import decky
 
 logger = decky.logger
 
-destination_folder = decky.DECKY_USER_HOME + "/.local/share/gamescope/reshade/Shaders"
+dest_folder = decky.DECKY_USER_HOME + "/.local/share/gamescope/reshade/Shaders"
 shaders_folder = decky.DECKY_PLUGIN_DIR + "/shaders"
 
 
@@ -23,14 +23,14 @@ class Plugin:
         return env
 
     async def get_shader_list(self):
-        return sorted([str(p.name) for p in Path(destination_folder).glob("*.fx")])
+        return sorted([str(p.name) for p in Path(dest_folder).glob("*.fx")])
 
     async def get_current_shader(self):
-        return self._current
+        return Plugin._current
 
     async def apply_shader(self, shader_name):
         logger.info("Setting Shader: " + shader_name)
-        self._current = shader_name
+        Plugin._current = shader_name
 
         try:
             ret = subprocess.run(
@@ -44,11 +44,11 @@ class Plugin:
 
     async def _main(self):
         try:
-            Path(destination_folder).mkdir(parents=True, exist_ok=True)
+            Path(dest_folder).mkdir(parents=True, exist_ok=True)
 
             for item in Path(shaders_folder).glob("*.fx"):
                 try:
-                    shutil.copy(item, destination_folder)
+                    shutil.copy(item, dest_folder)
                 except Exception:
                     logger.debug(f"could not copy {item}")
 
