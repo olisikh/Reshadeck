@@ -28,9 +28,14 @@ init: ## Initialize project
 	@echo -e "3. Build your code with \`\033[0;36mmake build\033[0m\` or \`\033[0;36mmake docker-build\033[0m\` to build inside a docker container"
 	@echo -e "4. Deploy your plugin code to steamdeck with \`\033[0;36mmake deploy\033[0m\`"
 
-update-frontend-lib: ## Update decky-frontend-lib
+update-ui: ## Update @decky/ui lib
 	@echo "+ $@"
-	@pnpm update decky-frontend-lib --latest
+	@pnpm update @decky/ui --latest
+
+
+update-api: ## Update @decky/api lib
+	@echo "+ $@
+	@pnpm update @decky/ui --latest
 
 build-front: ## Build frontend
 	@echo "+ $@"
@@ -49,8 +54,9 @@ copy-ssh-key: ## Copy public ssh key to steamdeck
 
 deploy-steamdeck: ## Deploy plugin build to steamdeck
 	@echo "+ $@"
+
 	@ssh $(DECK_USER)@$(DECK_HOST) -p $(DECK_PORT) -i $(DECK_KEY) \
- 		'chmod -v 755 $(DECK_HOME)/homebrew/plugins/ && mkdir -p $(DECK_HOME)/homebrew/plugins/$(PLUGIN_FOLDER)'
+		'chmod -v 755 $(DECK_HOME)/homebrew/plugins/ && mkdir -p $(DECK_HOME)/homebrew/plugins/$(PLUGIN_FOLDER)'
 	@rsync -azp --delete --progress -e "ssh -p $(DECK_PORT) -i $(DECK_KEY)" \
 		--chmod=Du=rwx,Dg=rx,Do=rx,Fu=rwx,Fg=rx,Fo=rx \
 		--exclude='.git/' \
@@ -65,8 +71,6 @@ deploy-steamdeck: ## Deploy plugin build to steamdeck
 		--exclude='.env' . \
 		--exclude='Makefile' . \
  		./ $(DECK_USER)@$(DECK_HOST):$(DECK_HOME)/homebrew/plugins/$(PLUGIN_FOLDER)/
-	@ssh $(DECK_USER)@$(DECK_HOST) -p $(DECK_PORT) -i $(DECK_KEY) \
- 		'chmod -v 755 $(DECK_HOME)/homebrew/plugins/'
 
 restart-decky: ## Restart Decky on remote steamdeck
 	@echo "+ $@"

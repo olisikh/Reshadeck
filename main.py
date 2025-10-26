@@ -1,78 +1,58 @@
 import os
-
-from click import get_app_dir
-import decky_plugin
-from pathlib import Path
-import json
-import os
-import subprocess
-import sys
 import shutil
-import time
-import asyncio
-import traceback
+import subprocess
+from pathlib import Path
 
-logger = decky_plugin.logger
+import decky
 
-destination_folder = decky_plugin.DECKY_USER_HOME + "/.local/share/gamescope/reshade/Shaders"
-shaders_folder = decky_plugin.DECKY_PLUGIN_DIR + "/shaders"
+logger = decky.logger
+
+dest_folder = decky.DECKY_USER_HOME + "/.local/share/gamescope/reshade/Shaders"
+shaders_folder = decky.DECKY_PLUGIN_DIR + "/shaders"
+
 
 class Plugin:
     _enabled = False
     _current = "0"
-    _current_screensaver = "SS_ScreenOff.fx"
 
-    def _get_all_shaders():
-        return sorted([str(p.name) for p in Path(destination_folder).glob("*.fx")])
+    def _get_clean_env(self):
+        """Get environment with cleared LD_LIBRARY_PATH to fix decky-loader subprocess issues"""
+        env = os.environ.copy()
+        env["LD_LIBRARY_PATH"] = ""
+        env["DISPLAY"] = ":0"
+        return env
 
     async def get_shader_list(self):
-        shaders = [s for s in Plugin._get_all_shaders() if not s.startswith("SS_")]
-        return shaders
-
-    async def get_screensaver_list(self):
-        shaders = [s for s in Plugin._get_all_shaders() if s.startswith("SS_")]
-        return shaders
+        return sorted([str(p.name) for p in Path(dest_folder).glob("*.fx")])
 
     async def get_current_shader(self):
         return Plugin._current
 
-    async def get_current_screensaver(self):
-        return Plugin._current_screensaver
+    async def apply_shader(self, shader_name):
+        logger.info("Setting Shader: " + shader_name)
+        Plugin._current = shader_name
 
-    async def apply_shader(self, screensaver):
-        shader = Plugin._current if not screensaver else Plugin._current_screensaver
-        logger.info("Applying shader " + shader)
         try:
-            ret = subprocess.run([shaders_folder + "/set_shader.sh", shader], capture_output=True)
+            ret = subprocess.run(
+                [shaders_folder + "/set_shader.sh", shader_name],
+                capture_output=True,
+                env=self._get_clean_env(),
+            )
             logger.info(ret)
         except Exception:
-            logger.exepction("apply screensaver")
-
-    async def set_shader(self, shader_name):
-        logger.info("Setting and applying shader " + shader_name)
-        try:
-            env = os.environ.copy()
-            env["LD_LIBRARY_PATH"] = ""
-            ret = subprocess.run([shaders_folder + "/set_shader.sh", shader_name], capture_output=True,env=env)
-            decky_plugin.logger.info(ret)
-            Plugin._current = shader_name
-        except Exception:
-            decky_plugin.logger.exepction("setting shader")
-
-    async def set_screensaver(self, shader_name):
-        logger.info("Setting screensaver " + shader_name)
-        Plugin._current_screensaver = shader_name
+            logger.exception("apply shader")
 
     async def _main(self):
         try:
-            Path(destination_folder).mkdir(parents=True, exist_ok=True)
+            Path(dest_folder).mkdir(parents=True, exist_ok=True)
+
             for item in Path(shaders_folder).glob("*.fx"):
                 try:
-                    shutil.copy(item, destination_folder)
+                    shutil.copy(item, dest_folder)
                 except Exception:
-                    decky_plugin.logger.debug(f"could not copy {item}")
-            decky_plugin.logger.info("Initialized")
-            decky_plugin.logger.info(str(await Plugin.get_shader_list(self)))
-            await Plugin.apply_shader(self, False)
+                    logger.debug(f"could not copy {item}")
+
+            logger.info("Initialized")
+            logger.info(str(await self.get_shader_list()))
         except Exception:
-            decky_plugin.logger.exepction("main")
+            logger.exception("main")
